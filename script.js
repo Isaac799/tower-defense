@@ -358,14 +358,7 @@ class Program {
                 this.DrawEnemies();
         }
 
-        MainLoop() {
-                let spawning = true;
-                while (spawning) {
-                        setTimeout(() => {
-                                spawning;
-                        }, 1000);
-                }
-        }
+        MainLoop() {}
 
         Run() {
                 this.ProgressRound();
