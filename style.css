@@ -10,13 +10,16 @@ body {
         background-color: gray;
 }
 
-#board {
-        position: relative;
+#board,
+#boardE {
+        position: fixed;
+        inset: 0;
         width: 100vw;
         height: 100vh;
 }
 
-.tile {
+.tile,
+.tile-unit {
         position: absolute;
 }
 
@@ -43,4 +46,12 @@ body {
         border-top-right-radius: 1.5rem;
         border-bottom-right-radius: 1.5rem;
         border-bottom-left-radius: 1.5rem;
+}
+
+.tile-unit {
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
 }
