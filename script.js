@@ -2,6 +2,19 @@ const base = 1;
 const difficulty = 2;
 const scale = 50;
 
+function isBitActive(number, bitPosition) {
+        const mask = 1 << bitPosition;
+        return (number & mask) !== 0;
+}
+
+function doubleValuesIfKeyExists(obj1, obj2) {
+        const result = {};
+        for (const [key, value] of Object.entries(obj1)) {
+                result[key] = obj2.hasOwnProperty(key) ? value * 2 : value;
+        }
+        return result;
+}
+
 /**
  * @type {Map<number, {
     name: string;
@@ -100,6 +113,8 @@ class Program {
          */
         selectedTile;
 
+        round = 0;
+
         /**
          * @type {number[][]}
          */
@@ -192,8 +207,52 @@ class Program {
 
                 this.board.appendChild(el);
         }
+
+        ProgressRound() {
+                console.log("progressing round");
+                this.round += 1;
+                let enemys = this.DetermineEnemy(this.round);
+                console.log(" * * * enemys", enemys);
+        }
+
+        DetermineEnemy(r) {
+                let enemyCounts = {};
+                for (let i = 1; i <= r + 1; i++) {
+                        const enemy = i - 1;
+                        if (i < r) {
+                                let o = this.DetermineEnemy(enemy);
+                                enemyCounts = doubleValuesIfKeyExists(
+                                        enemyCounts,
+                                        o
+                                );
+                        }
+                        if (isBitActive(r, enemy)) {
+                                if (enemyCounts[i]) {
+                                        enemyCounts[i] *= 2;
+                                } else {
+                                        enemyCounts[i] = 1;
+                                }
+                        }
+                }
+                return enemyCounts;
+        }
+
+        Run() {
+                this.ProgressRound();
+                this.ProgressRound();
+                this.ProgressRound();
+                this.ProgressRound();
+                this.ProgressRound();
+                this.ProgressRound();
+                this.ProgressRound();
+                this.ProgressRound();
+                this.ProgressRound();
+                this.ProgressRound();
+                this.ProgressRound();
+        }
 }
 
 document.addEventListener("DOMContentLoaded", (event) => {
         const program = new Program();
+        program.Run();
 });
