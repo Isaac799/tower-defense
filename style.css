@@ -1,0 +1,46 @@
+html,
+body {
+        margin: 0;
+        padding: 0;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 16px;
+}
+
+body {
+        background-color: gray;
+}
+
+#board {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+}
+
+.tile {
+        position: absolute;
+}
+
+.tile-modifiable:hover {
+        z-index: 1;
+        border: 1px solid white;
+        box-shadow: rgba(255, 255, 255, 0.24) 0px 3px 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+}
+
+.tile-modifiable:hover::before {
+        content: "Add Tower";
+        color: white;
+}
+
+.add-tower-context-menu {
+        position: absolute;
+        z-index: 2;
+        background-color: white;
+        box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+        border-top-right-radius: 1.5rem;
+        border-bottom-right-radius: 1.5rem;
+        border-bottom-left-radius: 1.5rem;
+}
