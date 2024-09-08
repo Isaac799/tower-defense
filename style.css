@@ -10,8 +10,7 @@ body {
         background-color: gray;
 }
 
-#board,
-#boardE {
+#board {
         position: fixed;
         inset: 0;
         width: 100vw;
@@ -21,6 +20,9 @@ body {
 .tile,
 .tile-unit {
         position: absolute;
+}
+
+.tile-modifiable {
 }
 
 .tile-modifiable:hover {

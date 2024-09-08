@@ -197,15 +197,10 @@ class Program {
          * @type {HTMLElement}
          */
         board;
-        /**
-         * @type {HTMLElement}
-         */
-        boardE;
         // posX = 100;
         // posY = 100;
         constructor() {
                 this.board = document.getElementById("board");
-                this.boardE = document.getElementById("boardE");
                 this.DrawTiles();
                 this.spawnPoints = this.DetermineSpawnPoints();
                 this.finishPoints = this.DetermineFinishPoints();
@@ -378,9 +373,9 @@ class Program {
         }
 
         RemoveAllDrawnEnemies() {
-                let els = this.boardE.querySelectorAll(".tile-unit");
+                let els = this.board.querySelectorAll(".tile-unit");
                 for (const e of els) {
-                        this.boardE.removeChild(e);
+                        this.board.removeChild(e);
                 }
         }
 
@@ -407,7 +402,7 @@ class Program {
                 el.style.top = PX(x);
                 el.style.left = PX(y);
 
-                this.boardE.appendChild(el);
+                this.board.appendChild(el);
         }
 
         AddEnemyToMap(unit) {
@@ -458,6 +453,33 @@ class Program {
                 }
         }
 
+        MoveEnemy(x, y) {
+                let unit = this.mapE[x][y];
+                if (!unit) {
+                        return;
+                }
+                if (unit.moved) {
+                        return;
+                }
+                let destination = this.mapE[x][y + 1];
+                let destinationOcupied = !!destination;
+
+                let tileKey = this.map[x][y + 1];
+                let tile = tileDict.get(tileKey);
+                let end = tile && tile.name === "finish";
+                if (end) {
+                        this.EnemyAtFinish(x, y);
+                        return;
+                }
+
+                if (destinationOcupied) {
+                        if (destination) return;
+                }
+                unit.moved = true;
+                this.mapE[x][y + 1] = unit;
+                this.mapE[x][y] = 0;
+        }
+
         PrepareEnemiesForMovement() {
                 for (let x = 0; x < this.mapE.length; x++) {
                         const row = this.mapE[x];
@@ -498,33 +520,6 @@ class Program {
                         }
                 }
                 return true;
-        }
-
-        MoveEnemy(x, y) {
-                let unit = this.mapE[x][y];
-                if (!unit) {
-                        return;
-                }
-                if (unit.moved) {
-                        return;
-                }
-                let destination = this.mapE[x][y + 1];
-                let destinationOcupied = !!destination;
-
-                let tileKey = this.map[x][y + 1];
-                let tile = tileDict.get(tileKey);
-                let end = tile && tile.name === "finish";
-                if (end) {
-                        this.EnemyAtFinish(x, y);
-                        return;
-                }
-
-                if (destinationOcupied) {
-                        if (destination) return;
-                }
-                unit.moved = true;
-                this.mapE[x][y + 1] = unit;
-                this.mapE[x][y] = 0;
         }
 
         EnemyAtFinish(x, y) {
