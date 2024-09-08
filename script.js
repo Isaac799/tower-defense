@@ -1,8 +1,8 @@
 const base = 1;
 const difficulty = 2;
 const scale = 50;
-const uiTick = 500;
-const enemyTick = 1000;
+const uiTick = 250;
+const enemyTick = 500;
 
 function isBitActive(number, bitPosition) {
         const mask = 1 << bitPosition;
@@ -67,9 +67,12 @@ tileDict.set(2, {
 /**
  * @type {Map<number, {
     name: string;
+    cost: number;
     damage: number;
     speed: number;
     backgroundColor: string;
+    x: number;
+    y: number;
 }>}
  */
 const towerDict = new Map();
@@ -80,6 +83,8 @@ towerDict.set(1, {
         damage: Math.floor(base * 2),
         speed: Math.floor(base * 8),
         backgroundColor: "blue",
+        x: 0,
+        y: 0,
 });
 
 towerDict.set(2, {
@@ -88,6 +93,8 @@ towerDict.set(2, {
         damage: Math.floor(base * 8),
         speed: Math.floor(base * 2),
         backgroundColor: "green",
+        x: 0,
+        y: 0,
 });
 
 towerDict.set(3, {
@@ -96,14 +103,21 @@ towerDict.set(3, {
         damage: Math.floor(base * 4),
         speed: Math.floor(base * 4),
         backgroundColor: "yellow",
+        x: 0,
+        y: 0,
 });
 
 /**
  * @type {Map<number, {
     name: string;
     health: number;
+    money: number;
     speed: number;
     backgroundColor: string;
+    addedToMap: boolean;
+    moved: boolean;
+    x: number;
+    y: number;
 }>}
  */
 const enemyDict = new Map();
@@ -115,6 +129,8 @@ enemyDict.set(1, {
         speed: Math.floor(base * 8 * (difficulty / 10 + 1)),
         addedToMap: false,
         moved: false,
+        x: 0,
+        y: 0,
         backgroundColor: "lightgreen",
 });
 
@@ -125,6 +141,8 @@ enemyDict.set(2, {
         speed: Math.floor(base * 2 * (difficulty / 10 + 1)),
         addedToMap: false,
         moved: false,
+        x: 0,
+        y: 0,
         backgroundColor: "brown",
 });
 
@@ -135,6 +153,8 @@ enemyDict.set(3, {
         speed: Math.floor(base * 4 * (difficulty / 10 + 1)),
         addedToMap: false,
         moved: false,
+        x: 0,
+        y: 0,
         backgroundColor: "lightpurple",
 });
 function PX(value) {
@@ -181,42 +201,8 @@ class Program {
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ];
-        mapE = [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        ];
-        mapT = [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        ];
+        ColEnemies = [];
+        ColTowers = [];
 
         /**
          * @type {HTMLElement}
@@ -435,31 +421,18 @@ class Program {
         }
 
         DrawEnemies() {
-                for (let x = 0; x < this.mapE.length; x++) {
-                        const row = this.mapE[x];
-                        for (let y = 0; y < row.length; y++) {
-                                const col = row[y];
-                                this.DrawEnemy(x, y);
-                        }
+                for (let i = 0; i < this.ColEnemies.length; i++) {
+                        const unit = this.ColEnemies[i];
+                        let el = document.createElement("div");
+                        el.classList.add("tile-unit");
+                        el.style.height = PX(base);
+                        el.style.width = PX(base);
+                        el.style.backgroundColor = unit.backgroundColor;
+                        el.innerText = unit.name;
+                        el.style.top = PX(unit.x);
+                        el.style.left = PX(unit.y);
+                        this.board.appendChild(el);
                 }
-        }
-
-        DrawEnemy(x, y) {
-                let unit = this.mapE[x][y];
-                if (!unit) {
-                        return;
-                }
-
-                let el = document.createElement("div");
-                el.classList.add("tile-unit");
-                el.style.height = PX(base);
-                el.style.width = PX(base);
-                el.style.backgroundColor = unit.backgroundColor;
-                el.innerText = unit.name;
-                el.style.top = PX(x);
-                el.style.left = PX(y);
-
-                this.board.appendChild(el);
         }
 
         RemoveAllDrawnEnemies() {
@@ -471,12 +444,18 @@ class Program {
 
         AddEnemyToMap(unit) {
                 let spawnPoint = this.PickRandomSpawn();
-                let targetPosition = this.mapE[spawnPoint[0]][spawnPoint[1]];
-                let targetPositionOccupied = !!targetPosition;
-                if (targetPositionOccupied) {
-                        return false;
+                for (let i = 0; i < this.ColEnemies.length; i++) {
+                        const e = this.ColEnemies[i];
+                        if (e.x === spawnPoint[0] && e.y === spawnPoint[1]) {
+                                // console.log(
+                                //         "cannot add enemy to map, occupied"
+                                // );
+                                return false;
+                        }
                 }
-                this.mapE[spawnPoint[0]][spawnPoint[1]] = unit;
+                unit.x = spawnPoint[0];
+                unit.y = spawnPoint[1];
+                this.ColEnemies.push(unit);
                 return true;
         }
 
@@ -495,129 +474,86 @@ class Program {
         }
 
         RemoveDeadEnemies() {
-                for (let x = 0; x < this.mapE.length; x++) {
-                        const row = this.mapE[x];
-                        for (let y = 0; y < row.length; y++) {
-                                let unit = this.mapE[x][y];
-                                if (!unit || unit.health > 0) {
-                                        continue;
-                                }
-                                this.mapE[x][y] = 0;
-                        }
-                }
+                this.ColEnemies = this.ColEnemies.filter((e) => e.health > 0);
         }
 
         MoveEnemies() {
-                for (let x = 0; x < this.mapE.length; x++) {
-                        const row = this.mapE[x];
-                        for (let y = 0; y < row.length; y++) {
-                                const col = row[y];
-                                this.MoveEnemy(x, y);
+                for (let i = 0; i < this.ColEnemies.length; i++) {
+                        let unit = this.ColEnemies[i];
+                        if (!unit) {
+                                console.log("no unit", unit);
+                                return;
                         }
-                }
-        }
+                        if (unit.moved) {
+                                console.log("already moved unit");
+                                return;
+                        }
 
-        MoveEnemy(x, y) {
-                let unit = this.mapE[x][y];
-                if (!unit) {
-                        return;
-                }
-                if (unit.moved) {
-                        return;
-                }
-                let destination = this.mapE[x][y + 1];
-                let destinationOcupied = !!destination;
+                        let destination = [[unit.x], [unit.y + 1]];
 
-                let tileKey = this.map[x][y + 1];
-                let tile = tileDict.get(tileKey);
-                let end = tile && tile.name === "finish";
-                if (end) {
-                        this.EnemyAtFinish(x, y);
-                        return;
-                }
+                        for (let i = 0; i < this.ColEnemies.length; i++) {
+                                const e = this.ColEnemies[i];
+                                if (
+                                        e.x === destination[0] &&
+                                        e.y === destination[1]
+                                ) {
+                                        console.log(
+                                                "cannot move enemy, occupied"
+                                        );
+                                        return;
+                                }
+                        }
 
-                if (destinationOcupied) {
-                        if (destination) return;
+                        let tileKey = this.map[unit.x][unit.y + 1];
+                        let tile = tileDict.get(tileKey);
+                        let end = tile && tile.name === "finish";
+                        if (end) {
+                                this.EnemyAtFinish(i);
+                                return;
+                        }
+
+                        unit.moved = true;
+                        unit.x = unit.x;
+                        unit.y = unit.y + 1;
                 }
-                unit.moved = true;
-                this.mapE[x][y + 1] = unit;
-                this.mapE[x][y] = 0;
         }
 
         PrepareEnemiesForMovement() {
-                for (let x = 0; x < this.mapE.length; x++) {
-                        const row = this.mapE[x];
-                        for (let y = 0; y < row.length; y++) {
-                                const col = row[y];
-                                let unit = this.mapE[x][y];
-                                if (!unit) {
-                                        continue;
-                                }
-                                unit.moved = false;
-                        }
-                }
+                this.ColEnemies = this.ColEnemies.map((e) => {
+                        e.moved = false;
+                        return e;
+                });
         }
 
         AllEnemiesMoved() {
-                for (let x = 0; x < this.mapE.length; x++) {
-                        const row = this.mapE[x];
-                        for (let y = 0; y < row.length; y++) {
-                                const col = row[y];
-                                let unit = this.mapE[x][y];
-                                if (unit && !unit.moved) {
-                                        return false;
-                                }
-                        }
-                }
-                return true;
+                return this.ColEnemies.indexOf((e) => e.moved) === -1;
         }
 
         AllEnemiesGone() {
-                for (let x = 0; x < this.mapE.length; x++) {
-                        const row = this.mapE[x];
-                        for (let y = 0; y < row.length; y++) {
-                                const col = row[y];
-                                let unit = this.mapE[x][y];
-                                if (unit) {
-                                        return false;
-                                }
-                        }
-                }
-                return true;
+                return this.ColEnemies.length === 0;
         }
 
-        EnemyAtFinish(x, y) {
+        EnemyAtFinish(i) {
                 console.log("Enemy at end, removing it");
-                this.mapE[x][y] = 0;
+                this.ColEnemies.splice(i, 1);
         }
 
         DrawTowers() {
-                for (let x = 0; x < this.mapT.length; x++) {
-                        const row = this.mapT[x];
-                        for (let y = 0; y < row.length; y++) {
-                                const col = row[y];
-                                this.DrawTower(x, y);
-                        }
+                for (let i = 0; i < this.ColTowers.length; i++) {
+                        let tower = this.ColTowers[i];
+                        let el = document.createElement("div");
+                        el.classList.add("tile-tower");
+                        el.style.height = PX(base);
+                        el.style.width = PX(base);
+                        el.style.backgroundColor = tower.backgroundColor;
+                        el.innerText = tower.name;
+                        el.style.top = PX(tower.x);
+                        el.style.left = PX(tower.y);
+                        this.board.appendChild(el);
                 }
         }
 
-        DrawTower(x, y) {
-                let tower = this.mapT[x][y];
-                if (!tower) {
-                        return;
-                }
-
-                let el = document.createElement("div");
-                el.classList.add("tile-tower");
-                el.style.height = PX(base);
-                el.style.width = PX(base);
-                el.style.backgroundColor = tower.backgroundColor;
-                el.innerText = tower.name;
-                el.style.top = PX(x);
-                el.style.left = PX(y);
-
-                this.board.appendChild(el);
-        }
+        DrawTower(x, y) {}
 
         RemoveAllDrawnTowers() {
                 let els = this.board.querySelectorAll(".tile-tower");
@@ -627,14 +563,20 @@ class Program {
         }
 
         AddTowerToMap(tower, x, y) {
-                let targetPosition = this.mapT[x][y];
-                let targetPositionOccupied = !!targetPosition;
-                if (targetPositionOccupied) {
-                        console.warn("tower pos occupied");
-                        return false;
+                for (let i = 0; i < this.ColTowers.length; i++) {
+                        const e = this.ColTowers[i];
+                        if (e.x === x && e.y === y) {
+                                console.log(
+                                        "cannot add tower to map, occupied"
+                                );
+                                return false;
+                        }
                 }
                 // this.map[x][y] = 2;
-                this.mapT[x][y] = JSON.parse(JSON.stringify(tower));
+                let clonedTower = JSON.parse(JSON.stringify(tower));
+                clonedTower.x = x;
+                clonedTower.y = y;
+                this.ColTowers.push(clonedTower);
                 return true;
         }
 
