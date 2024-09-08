@@ -2,7 +2,14 @@ const base = 1;
 const difficulty = 2;
 const scale = 50;
 const uiTick = 250;
-const enemyTick = 500;
+const blockmovementScore = 10;
+const enemyTick = 10;
+
+function normalize(value, array) {
+        const min = Math.min(...array);
+        const max = Math.max(...array);
+        return (value - min) / (max - min);
+}
 
 function isBitActive(number, bitPosition) {
         const mask = 1 << bitPosition;
@@ -23,6 +30,17 @@ function shuffleArray(array) {
                 [array[i], array[j]] = [array[j], array[i]];
         }
         return array;
+}
+
+function calculateDistance(point1, point2) {
+        const x1 = point1.x;
+        const y1 = point1.y;
+        const x2 = point2[0];
+        const y2 = point2[1];
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance;
 }
 
 /**
@@ -126,8 +144,9 @@ enemyDict.set(1, {
         name: "goblin",
         money: Math.floor(base * 10 - (difficulty / 5 + 1)),
         health: Math.floor(base * 2 * (difficulty / 5 + 1)),
-        speed: Math.floor(base * 8 * (difficulty / 10 + 1)),
+        speed: 2,
         addedToMap: false,
+        lastMove: "",
         moved: false,
         x: 0,
         y: 0,
@@ -138,8 +157,9 @@ enemyDict.set(2, {
         name: "troll",
         money: Math.floor(base * 20 - (difficulty / 5 + 1)),
         health: Math.floor(base * 8 * (difficulty / 5 + 1)),
-        speed: Math.floor(base * 2 * (difficulty / 10 + 1)),
+        speed: 4,
         addedToMap: false,
+        lastMove: "",
         moved: false,
         x: 0,
         y: 0,
@@ -150,8 +170,9 @@ enemyDict.set(3, {
         name: "witch",
         money: Math.floor(base * 30 - (difficulty / 5 + 1)),
         health: Math.floor(base * 4 * (difficulty / 5 + 1)),
-        speed: Math.floor(base * 4 * (difficulty / 10 + 1)),
+        speed: 3,
         addedToMap: false,
+        lastMove: "",
         moved: false,
         x: 0,
         y: 0,
@@ -177,27 +198,26 @@ class Program {
         selectedTile;
 
         round = 0;
+        subRound = 0;
 
         /**
          * @type {number[][]}
          */
         map = [
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                // [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -2],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -2],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                [-1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+                [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, -2],
+                [0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ];
@@ -428,7 +448,7 @@ class Program {
                         el.style.height = PX(base);
                         el.style.width = PX(base);
                         el.style.backgroundColor = unit.backgroundColor;
-                        el.innerText = unit.name;
+                        el.innerText = i + " " + unit.name.slice(0, 2);
                         el.style.top = PX(unit.x);
                         el.style.left = PX(unit.y);
                         this.board.appendChild(el);
@@ -477,44 +497,190 @@ class Program {
                 this.ColEnemies = this.ColEnemies.filter((e) => e.health > 0);
         }
 
+        GetMapTileSore(x, y) {
+                let tileKey = this.map[x][y];
+                let tile = tileDict.get(tileKey);
+                if (!tile) {
+                        return scale;
+                }
+                return tile.canTravel ? 0 : blockmovementScore;
+        }
+        GetEnemyPositionSore(x, y) {
+                for (let i = 0; i < this.ColEnemies.length; i++) {
+                        const e = this.ColEnemies[i];
+                        if (e.x === x && e.y === y) {
+                                return blockmovementScore;
+                        }
+                }
+                return 0;
+        }
+
+        GetMove(x, y) {
+                return {
+                        up: {
+                                x: x,
+                                y: y + 1,
+                        },
+                        down: {
+                                x: x,
+                                y: y - 1,
+                        },
+                        left: {
+                                x: x - 1,
+                                y: y,
+                        },
+                        right: {
+                                x: x + 1,
+                                y: y,
+                        },
+                };
+        }
+
+        GetScore(direction, x, y) {
+                let score = 0;
+
+                let move = this.GetMove(x, y);
+
+                score += this.GetMapTileSore(
+                        move[direction].x,
+                        move[direction].y
+                );
+                score += this.GetEnemyPositionSore(
+                        move[direction].x,
+                        move[direction].y
+                );
+
+                return score;
+        }
+
+        NormalizesDistanceScores(x, y, goal) {
+                let move = this.GetMove(x, y);
+
+                let up = calculateDistance(move["up"], goal);
+                let down = calculateDistance(move["down"], goal);
+                let left = calculateDistance(move["left"], goal);
+                let right = calculateDistance(move["right"], goal);
+
+                let allDistances = [up, down, left, right];
+
+                return {
+                        up: normalize(up, allDistances),
+                        down: normalize(down, allDistances),
+                        left: normalize(left, allDistances),
+                        right: normalize(right, allDistances),
+                };
+        }
+
+        // CornerCheck(score, directionA, directionB) {
+        //         if (score[directionA] >= blockmovementScore && score[directionB >= blockmovementScore]) {
+        //                 console.log("Corner detected")
+        //                 return
+        //         }
+        // }
+
         MoveEnemies() {
                 for (let i = 0; i < this.ColEnemies.length; i++) {
                         let unit = this.ColEnemies[i];
-                        if (!unit) {
-                                console.log("no unit", unit);
-                                return;
+
+                        let score = {
+                                up: this.GetScore("up", unit.x, unit.y),
+                                down: this.GetScore("down", unit.x, unit.y),
+                                left: this.GetScore("left", unit.x, unit.y),
+                                right: this.GetScore("right", unit.x, unit.y),
+                        };
+                        let distance = this.NormalizesDistanceScores(
+                                unit.x,
+                                unit.y,
+                                this.finishPoints[0]
+                        );
+                        score.up += distance.up;
+                        score.down += distance.down;
+                        score.left += distance.left;
+                        score.right += distance.right;
+
+                        if (unit.lastMove === "up") {
+                                score.down += 2;
+                        } else if (unit.lastMove === "down") {
+                                score.up += 2;
+                        } else if (unit.lastMove === "left") {
+                                score.right += 2;
+                        } else if (unit.lastMove === "right") {
+                                score.left += 2;
                         }
+
+                        let moveOptions = Object.entries(score).sort(
+                                (a, b) => a[1] - b[1]
+                        );
+
+                        let move = this.GetMove(unit.x, unit.y);
+                        let toMoveScore = moveOptions[0][1];
+                        let toMoveDirection = moveOptions[0][0];
+                        let destination = move[toMoveDirection];
+
+                        if (toMoveScore >= blockmovementScore) {
+                                continue;
+                        }
+
+                        // if (
+                        //         unit.lastMove === "up" &&
+                        //         toMoveDirection === "down"
+                        // ) {
+                        //         unit.lastMove = "";
+                        //         continue;
+                        // }
+                        // if (
+                        //         unit.lastMove === "down" &&
+                        //         toMoveDirection === "up"
+                        // ) {
+                        //         unit.lastMove = "";
+                        //         continue;
+                        // }
+
+                        // if (
+                        //         unit.lastMove === "left" &&
+                        //         toMoveDirection === "right"
+                        // ) {
+                        //         unit.lastMove = "";
+                        //         continue;
+                        // }
+                        // if (
+                        //         unit.lastMove === "right" &&
+                        //         toMoveDirection === "left"
+                        // ) {
+                        //         unit.lastMove = "";
+                        //         continue;
+                        // }
+
+                        // if (
+                        //         toMoveDirection === "left" ||
+                        //         toMoveDirection === "right"
+                        // ) {
+                        //         debugger;
+                        // }
+
+                        let allowedToMove = this.subRound % unit.speed === 0;
+                        if (!allowedToMove) {
+                                console.log("NOT moving");
+                                continue;
+                        }
+
                         if (unit.moved) {
                                 console.log("already moved unit");
-                                return;
+                                continue;
                         }
 
-                        let destination = [[unit.x], [unit.y + 1]];
-
-                        for (let i = 0; i < this.ColEnemies.length; i++) {
-                                const e = this.ColEnemies[i];
-                                if (
-                                        e.x === destination[0] &&
-                                        e.y === destination[1]
-                                ) {
-                                        console.log(
-                                                "cannot move enemy, occupied"
-                                        );
-                                        return;
-                                }
-                        }
-
-                        let tileKey = this.map[unit.x][unit.y + 1];
+                        let tileKey = this.map[destination.x][destination.y];
                         let tile = tileDict.get(tileKey);
                         let end = tile && tile.name === "finish";
                         if (end) {
                                 this.EnemyAtFinish(i);
-                                return;
+                                continue;
                         }
 
                         unit.moved = true;
-                        unit.x = unit.x;
-                        unit.y = unit.y + 1;
+                        unit.x = destination.x;
+                        unit.y = destination.y;
+                        unit.lastMove = toMoveDirection;
                 }
         }
 
@@ -581,6 +747,10 @@ class Program {
         }
 
         ProgressRound(enemies) {
+                if (this.subRound >= 10) {
+                        this.subRound = 0;
+                }
+                this.subRound += 1;
                 this.RemoveDeadEnemies();
                 this.PrepareEnemiesForMovement();
                 this.MoveEnemies();
@@ -595,6 +765,7 @@ class Program {
 
                 if (this.AllEnemiesGone() && doneSpawning) {
                         console.log("round finished");
+                        this.subRound = 0;
                         return;
                 }
 
