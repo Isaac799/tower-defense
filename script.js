@@ -16,6 +16,14 @@ function doubleValuesIfKeyExists(obj1, obj2) {
         return result;
 }
 
+function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+}
+
 /**
  * @type {Map<number, {
     name: string;
@@ -100,6 +108,7 @@ enemyDict.set(1, {
         name: "goblin",
         health: base * 2 * (difficulty / 5 + 1),
         speed: base * 8 * (difficulty / 10 + 1),
+        addedToMap: false,
         moved: false,
         backgroundColor: "lightgreen",
 });
@@ -108,6 +117,7 @@ enemyDict.set(2, {
         name: "troll",
         health: base * 8 * (difficulty / 5 + 1),
         speed: base * 2 * (difficulty / 10 + 1),
+        addedToMap: false,
         moved: false,
         backgroundColor: "brown",
 });
@@ -116,6 +126,7 @@ enemyDict.set(3, {
         name: "witch",
         health: base * 4 * (difficulty / 5 + 1),
         speed: base * 4 * (difficulty / 10 + 1),
+        addedToMap: false,
         moved: false,
         backgroundColor: "lightpurple",
 });
@@ -149,8 +160,8 @@ class Program {
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                // [-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -2],
+                // [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -2],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -261,6 +272,7 @@ class Program {
         }
         DetermineEnemiesForRound(r) {
                 let enemyCounts = {};
+
                 for (let i = 1; i <= r + 1; i++) {
                         const enemy = i - 1;
                         if (i < r) {
@@ -279,6 +291,34 @@ class Program {
                         }
                 }
                 return enemyCounts;
+        }
+
+        GenerateEnemies(r) {
+                let counts = this.DetermineEnemiesForRound(r);
+
+                let finalEnemies = [];
+                let units = Object.entries(counts);
+                for (let i = 0; i < units.length; i++) {
+                        let enemy = units[i];
+                        let unitIdentifier = parseInt(enemy[0]);
+                        let unitCount = enemy[1];
+                        for (let j = 0; j < unitCount; j++) {
+                                let unit = enemyDict.get(unitIdentifier);
+                                if (!unit) {
+                                        console.error(
+                                                "cannot find unit ",
+                                                unitIdentifier
+                                        );
+                                        return;
+                                }
+                                let clonedUnit = JSON.parse(
+                                        JSON.stringify(unit)
+                                );
+                                finalEnemies.push(clonedUnit);
+                        }
+                }
+                shuffleArray(finalEnemies);
+                return finalEnemies;
         }
 
         /**
@@ -385,28 +425,14 @@ class Program {
          * @param {{[x:number]:number}} enemies
          */
         AddEnemiesToMap(enemies) {
-                let units = Object.entries(enemies);
-                // console.log(units);
-                for (let i = 0; i < units.length; i++) {
-                        let enemy = units[i];
-                        let unitIdentifier = parseInt(enemy[0]);
-                        let unitCount = enemy[1];
-                        let unit = enemyDict.get(unitIdentifier);
-                        if (!unit) {
-                                console.error(
-                                        "cannot find unit ",
-                                        unitIdentifier
-                                );
-                                return;
-                        }
-                        let clonedUnit = JSON.parse(JSON.stringify(unit));
-                        for (let j = 0; j < unitCount; j++) {
-                                let success = this.AddEnemyToMap(clonedUnit);
-                                if (success) {
-                                        enemies[enemy[0]] -= 1;
-                                }
+                for (let i = 0; i < enemies.length; i++) {
+                        const e = enemies[i];
+                        let success = this.AddEnemyToMap(e);
+                        if (success) {
+                                e.addedToMap = true;
                         }
                 }
+                return enemies.filter((e) => !e.addedToMap);
         }
 
         RemoveDeadEnemies() {
@@ -508,19 +534,14 @@ class Program {
 
         ProgressRound(enemies) {
                 this.progressingRound = true;
-                console.log("progressing round:", this.round);
 
                 this.RemoveDeadEnemies();
                 this.PrepareEnemiesForMovement();
                 this.MoveEnemies();
 
-                let doneSpawning =
-                        Object.entries(enemies)
-                                .map((e) => e[1])
-                                .filter((e) => e > 0).length === 0;
-
+                let doneSpawning = enemies.length === 0;
                 if (!doneSpawning) {
-                        this.AddEnemiesToMap(enemies);
+                        enemies = this.AddEnemiesToMap(enemies);
                 }
 
                 this.RemoveAllDrawnEnemies();
@@ -538,7 +559,7 @@ class Program {
 
         KickoffRound() {
                 this.round += 1;
-                let enemies = this.DetermineEnemiesForRound(this.round);
+                let enemies = this.GenerateEnemies(this.round);
                 this.ProgressRound(enemies);
         }
 
