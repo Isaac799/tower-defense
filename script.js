@@ -1,7 +1,7 @@
 const base = 1;
 const difficulty = 2;
 const scale = 50;
-const tick = 600;
+const tick = 100;
 
 function isBitActive(number, bitPosition) {
         const mask = 1 << bitPosition;
@@ -20,7 +20,7 @@ function doubleValuesIfKeyExists(obj1, obj2) {
  * @type {Map<number, {
     name: string;
     backgroundColor: string;
-    enemyTravel: boolean;
+    canTravel: boolean;
 }>}
  */
 const tileDict = new Map();
@@ -28,25 +28,31 @@ const tileDict = new Map();
 tileDict.set(-1, {
         name: "spawn",
         backgroundColor: "indigo",
-        enemyTravel: false,
+        canTravel: true,
+});
+
+tileDict.set(-2, {
+        name: "finish",
+        backgroundColor: "indigo",
+        canTravel: true,
 });
 
 tileDict.set(0, {
         name: "none",
         backgroundColor: "black",
-        enemyTravel: false,
+        canTravel: false,
 });
 
 tileDict.set(1, {
         name: "dirt",
         backgroundColor: "tan",
-        enemyTravel: true,
+        canTravel: true,
 });
 
 tileDict.set(2, {
         name: "tree",
         backgroundColor: "green",
-        enemyTravel: false,
+        canTravel: false,
 });
 
 /**
@@ -94,6 +100,7 @@ enemyDict.set(1, {
         name: "goblin",
         health: base * 2 * (difficulty / 5 + 1),
         speed: base * 8 * (difficulty / 10 + 1),
+        moved: false,
         backgroundColor: "lightgreen",
 });
 
@@ -101,13 +108,15 @@ enemyDict.set(2, {
         name: "troll",
         health: base * 8 * (difficulty / 5 + 1),
         speed: base * 2 * (difficulty / 10 + 1),
+        moved: false,
         backgroundColor: "brown",
 });
 
-enemyDict.set(4, {
+enemyDict.set(3, {
         name: "witch",
         health: base * 4 * (difficulty / 5 + 1),
         speed: base * 4 * (difficulty / 10 + 1),
+        moved: false,
         backgroundColor: "lightpurple",
 });
 function PX(value) {
@@ -115,10 +124,15 @@ function PX(value) {
 }
 
 class Program {
+        progressingRound = false;
         /**
          * @type {[number, number][]}
          */
         spawnPoints = [];
+        /**
+         * @type {[number, number][]}
+         */
+        finishPoints = [];
         /**
          * @type {undefined | [number, number]}
          */
@@ -132,18 +146,20 @@ class Program {
         map = [
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [-1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                [-1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                [0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
-                [0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
-                [0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
-                [0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
-                [0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
-                [0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
-                [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
-                [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                // [-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -2],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -2],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ];
@@ -181,6 +197,7 @@ class Program {
                 this.boardE = document.getElementById("boardE");
                 this.DrawTiles();
                 this.spawnPoints = this.DetermineSpawnPoints();
+                this.finishPoints = this.DetermineFinishPoints();
         }
 
         DrawTiles() {
@@ -283,6 +300,24 @@ class Program {
         }
 
         /**
+         * @returns {[number, number]}
+         */
+        DetermineFinishPoints() {
+                let options = [];
+                for (let x = 0; x < this.map.length; x++) {
+                        const row = this.map[x];
+                        for (let y = 0; y < row.length; y++) {
+                                let tileKey = this.map[x][y];
+                                let tile = tileDict.get(tileKey);
+                                if (tile.name === "finish") {
+                                        options.push([x, y]);
+                                }
+                        }
+                }
+                return options;
+        }
+
+        /**
          *
          * @returns {[number, number]}
          */
@@ -299,6 +334,13 @@ class Program {
                                 const col = row[y];
                                 this.DrawEnemy(x, y);
                         }
+                }
+        }
+
+        RemoveAllDrawnEnemies() {
+                let els = this.boardE.querySelectorAll(".tile-unit");
+                for (const e of els) {
+                        this.boardE.removeChild(e);
                 }
         }
 
@@ -330,7 +372,13 @@ class Program {
 
         AddEnemyToMap(unit) {
                 let spawnPoint = this.PickRandomSpawn();
+                let targetPosition = this.mapE[spawnPoint[0]][spawnPoint[1]];
+                let targetPositionOccupied = !!targetPosition;
+                if (targetPositionOccupied) {
+                        return false;
+                }
                 this.mapE[spawnPoint[0]][spawnPoint[1]] = unit;
+                return true;
         }
 
         /**
@@ -344,27 +392,159 @@ class Program {
                         let unitIdentifier = parseInt(enemy[0]);
                         let unitCount = enemy[1];
                         let unit = enemyDict.get(unitIdentifier);
+                        if (!unit) {
+                                console.error(
+                                        "cannot find unit ",
+                                        unitIdentifier
+                                );
+                                return;
+                        }
+                        let clonedUnit = JSON.parse(JSON.stringify(unit));
                         for (let j = 0; j < unitCount; j++) {
-                                this.AddEnemyToMap(unit);
+                                let success = this.AddEnemyToMap(clonedUnit);
+                                if (success) {
+                                        enemies[enemy[0]] -= 1;
+                                }
                         }
                 }
         }
 
-        ProgressRound() {
-                console.log("progressing round");
-                this.round += 1;
-                let enemies = this.DetermineEnemiesForRound(this.round);
-                this.AddEnemiesToMap(enemies);
-                this.DrawEnemies();
+        RemoveDeadEnemies() {
+                for (let x = 0; x < this.mapE.length; x++) {
+                        const row = this.mapE[x];
+                        for (let y = 0; y < row.length; y++) {
+                                let unit = this.mapE[x][y];
+                                if (!unit || unit.health > 0) {
+                                        continue;
+                                }
+                                this.mapE[x][y] = 0;
+                        }
+                }
         }
 
-        MainLoop() {}
+        MoveEnemies() {
+                for (let x = 0; x < this.mapE.length; x++) {
+                        const row = this.mapE[x];
+                        for (let y = 0; y < row.length; y++) {
+                                const col = row[y];
+                                this.MoveEnemy(x, y);
+                        }
+                }
+        }
+
+        PrepareEnemiesForMovement() {
+                for (let x = 0; x < this.mapE.length; x++) {
+                        const row = this.mapE[x];
+                        for (let y = 0; y < row.length; y++) {
+                                const col = row[y];
+                                let unit = this.mapE[x][y];
+                                if (!unit) {
+                                        continue;
+                                }
+                                unit.moved = false;
+                        }
+                }
+        }
+
+        AllEnemiesMoved() {
+                for (let x = 0; x < this.mapE.length; x++) {
+                        const row = this.mapE[x];
+                        for (let y = 0; y < row.length; y++) {
+                                const col = row[y];
+                                let unit = this.mapE[x][y];
+                                if (unit && !unit.moved) {
+                                        return false;
+                                }
+                        }
+                }
+                return true;
+        }
+
+        AllEnemiesGone() {
+                for (let x = 0; x < this.mapE.length; x++) {
+                        const row = this.mapE[x];
+                        for (let y = 0; y < row.length; y++) {
+                                const col = row[y];
+                                let unit = this.mapE[x][y];
+                                if (unit) {
+                                        return false;
+                                }
+                        }
+                }
+                return true;
+        }
+
+        MoveEnemy(x, y) {
+                let unit = this.mapE[x][y];
+                if (!unit) {
+                        return;
+                }
+                if (unit.moved) {
+                        return;
+                }
+                let destination = this.mapE[x][y + 1];
+                let destinationOcupied = !!destination;
+
+                let tileKey = this.map[x][y + 1];
+                let tile = tileDict.get(tileKey);
+                let end = tile && tile.name === "finish";
+                if (end) {
+                        this.EnemyAtFinish(x, y);
+                        return;
+                }
+
+                if (destinationOcupied) {
+                        if (destination) return;
+                }
+                unit.moved = true;
+                this.mapE[x][y + 1] = unit;
+                this.mapE[x][y] = 0;
+        }
+
+        EnemyAtFinish(x, y) {
+                console.log("Enemy at end, removing it");
+                this.mapE[x][y] = 0;
+        }
+
+        ProgressRound(enemies) {
+                this.progressingRound = true;
+                console.log("progressing round:", this.round);
+
+                this.RemoveDeadEnemies();
+                this.PrepareEnemiesForMovement();
+                this.MoveEnemies();
+
+                let doneSpawning =
+                        Object.entries(enemies)
+                                .map((e) => e[1])
+                                .filter((e) => e > 0).length === 0;
+
+                if (!doneSpawning) {
+                        this.AddEnemiesToMap(enemies);
+                }
+
+                this.RemoveAllDrawnEnemies();
+                this.DrawEnemies();
+
+                if (this.AllEnemiesGone() && doneSpawning) {
+                        console.log("round finished");
+                        return;
+                }
+
+                setTimeout(() => {
+                        this.ProgressRound(enemies);
+                }, tick);
+        }
+
+        KickoffRound() {
+                this.round += 1;
+                let enemies = this.DetermineEnemiesForRound(this.round);
+                this.ProgressRound(enemies);
+        }
 
         Run() {
-                this.ProgressRound();
-                this.ProgressRound();
-
-                // setInterval(() => {}, tick);
+                this.round = 6;
+                this.KickoffRound();
         }
 }
 
