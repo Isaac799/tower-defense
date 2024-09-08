@@ -1,7 +1,8 @@
 const base = 1;
 const difficulty = 2;
 const scale = 50;
-const tick = 100;
+const uiTick = 500;
+const enemyTick = 1000;
 
 function isBitActive(number, bitPosition) {
         const mask = 1 << bitPosition;
@@ -58,8 +59,8 @@ tileDict.set(1, {
 });
 
 tileDict.set(2, {
-        name: "tree",
-        backgroundColor: "green",
+        name: "stone",
+        backgroundColor: "gray",
         canTravel: false,
 });
 
@@ -73,24 +74,27 @@ tileDict.set(2, {
  */
 const towerDict = new Map();
 
-towerDict.set(0, {
+towerDict.set(1, {
         name: "archer",
-        damage: base * 2,
-        speed: base * 8,
+        cost: Math.floor(base * 10 + (difficulty / 5 + 1)),
+        damage: Math.floor(base * 2),
+        speed: Math.floor(base * 8),
         backgroundColor: "blue",
 });
 
-towerDict.set(1, {
+towerDict.set(2, {
         name: "catapult",
-        damage: base * 8,
-        speed: base * 2,
+        cost: Math.floor(base * 20 + (difficulty / 5 + 1)),
+        damage: Math.floor(base * 8),
+        speed: Math.floor(base * 2),
         backgroundColor: "green",
 });
 
-towerDict.set(2, {
+towerDict.set(3, {
         name: "mage",
-        damage: base * 4,
-        speed: base * 4,
+        cost: Math.floor(base * 30 + (difficulty / 5 + 1)),
+        damage: Math.floor(base * 4),
+        speed: Math.floor(base * 4),
         backgroundColor: "yellow",
 });
 
@@ -106,8 +110,9 @@ const enemyDict = new Map();
 
 enemyDict.set(1, {
         name: "goblin",
-        health: base * 2 * (difficulty / 5 + 1),
-        speed: base * 8 * (difficulty / 10 + 1),
+        money: Math.floor(base * 10 - (difficulty / 5 + 1)),
+        health: Math.floor(base * 2 * (difficulty / 5 + 1)),
+        speed: Math.floor(base * 8 * (difficulty / 10 + 1)),
         addedToMap: false,
         moved: false,
         backgroundColor: "lightgreen",
@@ -115,8 +120,9 @@ enemyDict.set(1, {
 
 enemyDict.set(2, {
         name: "troll",
-        health: base * 8 * (difficulty / 5 + 1),
-        speed: base * 2 * (difficulty / 10 + 1),
+        money: Math.floor(base * 20 - (difficulty / 5 + 1)),
+        health: Math.floor(base * 8 * (difficulty / 5 + 1)),
+        speed: Math.floor(base * 2 * (difficulty / 10 + 1)),
         addedToMap: false,
         moved: false,
         backgroundColor: "brown",
@@ -124,8 +130,9 @@ enemyDict.set(2, {
 
 enemyDict.set(3, {
         name: "witch",
-        health: base * 4 * (difficulty / 5 + 1),
-        speed: base * 4 * (difficulty / 10 + 1),
+        money: Math.floor(base * 30 - (difficulty / 5 + 1)),
+        health: Math.floor(base * 4 * (difficulty / 5 + 1)),
+        speed: Math.floor(base * 4 * (difficulty / 10 + 1)),
         addedToMap: false,
         moved: false,
         backgroundColor: "lightpurple",
@@ -135,7 +142,7 @@ function PX(value) {
 }
 
 class Program {
-        progressingRound = false;
+        money = 10000;
         /**
          * @type {[number, number][]}
          */
@@ -192,6 +199,24 @@ class Program {
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ];
+        mapT = [
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ];
 
         /**
          * @type {HTMLElement}
@@ -201,7 +226,6 @@ class Program {
         // posY = 100;
         constructor() {
                 this.board = document.getElementById("board");
-                this.DrawTiles();
                 this.spawnPoints = this.DetermineSpawnPoints();
                 this.finishPoints = this.DetermineFinishPoints();
         }
@@ -240,6 +264,13 @@ class Program {
                 this.board.appendChild(el);
         }
 
+        RemoveAllTiles() {
+                let els = this.board.querySelectorAll(".tile");
+                for (const e of els) {
+                        this.board.removeChild(e);
+                }
+        }
+
         RemoveAllDrawAddTowerContextMenu() {
                 let els = this.board.querySelectorAll(
                         ".add-tower-context-menu"
@@ -257,14 +288,55 @@ class Program {
                         this.selectedTile = null;
                         this.RemoveAllDrawAddTowerContextMenu();
                 });
+
+                let t1 = towerDict.get(1);
+                let t2 = towerDict.get(2);
+                let t3 = towerDict.get(3);
+
+                let t1el = document.createElement("div");
+                t1el.classList.add("add-tower-item");
+                t1el.innerText = t1.name;
+
+                t1el.addEventListener("click", (event) => {
+                        if (this.money >= t1.cost) {
+                                this.money -= t1.cost;
+                                this.AddTowerToMap(t1, x, y);
+                        }
+                        this.RemoveAllDrawAddTowerContextMenu();
+                });
+                let t2el = document.createElement("div");
+                t2el.classList.add("add-tower-item");
+                t2el.innerText = t2.name;
+                t2el.addEventListener("click", (event) => {
+                        if (this.money >= t2.cost) {
+                                this.money -= t2.cost;
+                                this.AddTowerToMap(t2, x, y);
+                        }
+                        this.RemoveAllDrawAddTowerContextMenu();
+                });
+                let t3el = document.createElement("div");
+                t3el.classList.add("add-tower-item");
+                t3el.innerText = t3.name;
+                t3el.addEventListener("click", (event) => {
+                        if (this.money >= t3.cost) {
+                                this.money -= t3.cost;
+                                this.AddTowerToMap(t3, x, y);
+                        }
+                        this.RemoveAllDrawAddTowerContextMenu();
+                });
+
+                el.appendChild(t1el);
+                el.appendChild(t2el);
+                el.appendChild(t3el);
+
                 el.style.height = PX(2.5 * base);
                 el.style.width = PX(2.5 * base);
                 el.style.top = PX(x + base / 2);
                 el.style.left = PX(y + base / 2);
-                console.log("Adding context menu");
                 this.board.appendChild(el);
                 return el;
         }
+
         DetermineEnemiesForRound(r) {
                 let enemyCounts = {};
 
@@ -372,13 +444,6 @@ class Program {
                 }
         }
 
-        RemoveAllDrawnEnemies() {
-                let els = this.board.querySelectorAll(".tile-unit");
-                for (const e of els) {
-                        this.board.removeChild(e);
-                }
-        }
-
         DrawEnemy(x, y) {
                 let unit = this.mapE[x][y];
                 if (!unit) {
@@ -387,14 +452,6 @@ class Program {
 
                 let el = document.createElement("div");
                 el.classList.add("tile-unit");
-                // if (tile.name === "none") {
-                //         el.classList.add("tile-unit");
-                //         el.addEventListener("contextmenu", (event) => {
-                //                 event.preventDefault();
-                //                 this.DrawAddTowerContextMenu(x, y);
-                //                 this.selectedTile = [x, y];
-                //         });
-                // }
                 el.style.height = PX(base);
                 el.style.width = PX(base);
                 el.style.backgroundColor = unit.backgroundColor;
@@ -403,6 +460,13 @@ class Program {
                 el.style.left = PX(y);
 
                 this.board.appendChild(el);
+        }
+
+        RemoveAllDrawnEnemies() {
+                let els = this.board.querySelectorAll(".tile-unit");
+                for (const e of els) {
+                        this.board.removeChild(e);
+                }
         }
 
         AddEnemyToMap(unit) {
@@ -527,9 +591,54 @@ class Program {
                 this.mapE[x][y] = 0;
         }
 
-        ProgressRound(enemies) {
-                this.progressingRound = true;
+        DrawTowers() {
+                for (let x = 0; x < this.mapT.length; x++) {
+                        const row = this.mapT[x];
+                        for (let y = 0; y < row.length; y++) {
+                                const col = row[y];
+                                this.DrawTower(x, y);
+                        }
+                }
+        }
 
+        DrawTower(x, y) {
+                let tower = this.mapT[x][y];
+                if (!tower) {
+                        return;
+                }
+
+                let el = document.createElement("div");
+                el.classList.add("tile-tower");
+                el.style.height = PX(base);
+                el.style.width = PX(base);
+                el.style.backgroundColor = tower.backgroundColor;
+                el.innerText = tower.name;
+                el.style.top = PX(x);
+                el.style.left = PX(y);
+
+                this.board.appendChild(el);
+        }
+
+        RemoveAllDrawnTowers() {
+                let els = this.board.querySelectorAll(".tile-tower");
+                for (const e of els) {
+                        this.board.removeChild(e);
+                }
+        }
+
+        AddTowerToMap(tower, x, y) {
+                let targetPosition = this.mapT[x][y];
+                let targetPositionOccupied = !!targetPosition;
+                if (targetPositionOccupied) {
+                        console.warn("tower pos occupied");
+                        return false;
+                }
+                // this.map[x][y] = 2;
+                this.mapT[x][y] = JSON.parse(JSON.stringify(tower));
+                return true;
+        }
+
+        ProgressRound(enemies) {
                 this.RemoveDeadEnemies();
                 this.PrepareEnemiesForMovement();
                 this.MoveEnemies();
@@ -549,7 +658,17 @@ class Program {
 
                 setTimeout(() => {
                         this.ProgressRound(enemies);
-                }, tick);
+                }, enemyTick);
+        }
+
+        DrawUi() {
+                // this.RemoveAllTiles();
+                // this.DrawTiles();
+                this.RemoveAllDrawnTowers();
+                this.DrawTowers();
+                setTimeout(() => {
+                        this.DrawUi();
+                }, uiTick);
         }
 
         KickoffRound() {
@@ -560,7 +679,9 @@ class Program {
 
         Run() {
                 this.round = 6;
+                this.DrawTiles();
                 this.KickoffRound();
+                this.DrawUi();
         }
 }
 

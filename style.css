@@ -17,8 +17,17 @@ body {
         height: 100vh;
 }
 
+.tile {
+        z-index: 0;
+}
+.tile-unit,
+.tile-tower {
+        z-index: 1;
+}
+
 .tile,
-.tile-unit {
+.tile-unit,
+.tile-tower {
         position: absolute;
 }
 
@@ -48,10 +57,35 @@ body {
         border-top-right-radius: 1.5rem;
         border-bottom-right-radius: 1.5rem;
         border-bottom-left-radius: 1.5rem;
+
+        display: grid;
+        grid-template-columns: auto auto;
+        grid-template-rows: auto auto;
+}
+
+.add-tower-item {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+}
+
+.add-tower-item:hover {
+        box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
 
 .tile-unit {
         border-radius: 50%;
+        transform: scale(80%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+}
+
+.tile-tower {
+        border-radius: 0.5rem;
+        transform: scale(80%);
         display: flex;
         justify-content: center;
         align-items: center;
